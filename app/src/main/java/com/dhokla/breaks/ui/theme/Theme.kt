@@ -8,33 +8,40 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import com.dhokla.breaks.data.ThemeMode
+
+fun ThemeMode.resolveDark(systemDark: Boolean): Boolean = when (this) {
+    ThemeMode.LIGHT -> false
+    ThemeMode.DARK -> true
+    ThemeMode.SYSTEM -> systemDark
+}
 
 val LocalCalm = staticCompositionLocalOf { CalmLight }
 
 private val LightColors = lightColorScheme(
-    primary = Forest,
+    primary = Violet,
     onPrimary = Color.White,
-    primaryContainer = ForestContainer,
-    onPrimaryContainer = OnForest,
-    secondary = Color(0xFF5E6B60),
+    primaryContainer = VioletContainer,
+    onPrimaryContainer = OnVioletContainer,
+    secondary = Color(0xFF675B80),
     onSecondary = Color.White,
-    background = Cream,
-    onBackground = Ink,
-    surface = Cream,
-    onSurface = Ink,
-    surfaceVariant = CreamDeep,
-    onSurfaceVariant = InkSoft,
-    outline = Color(0x24221F17),
-    outlineVariant = Color(0x16221F17)
+    background = Color(0xFFF1EBFA),
+    onBackground = InkViolet,
+    surface = Color(0xFFF1EBFA),
+    onSurface = InkViolet,
+    surfaceVariant = LilacMist,
+    onSurfaceVariant = InkVioletSoft,
+    outline = Color(0x242A2240),
+    outlineVariant = Color(0x162A2240)
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Fern,
-    onPrimary = OnFern,
-    primaryContainer = FernContainer,
+    primary = LavenderGlow,
+    onPrimary = OnLavenderGlow,
+    primaryContainer = LavenderGlowContainer,
     onPrimaryContainer = InkNight,
-    secondary = Color(0xFFAEB8AB),
-    onSecondary = Color(0xFF1B201C),
+    secondary = Color(0xFFACA2C4),
+    onSecondary = Color(0xFF1D1830),
     background = NightBase,
     onBackground = InkNight,
     surface = NightBase,

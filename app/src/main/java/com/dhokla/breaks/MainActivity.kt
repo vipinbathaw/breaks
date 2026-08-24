@@ -1,8 +1,10 @@
 package com.dhokla.breaks
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
@@ -33,10 +35,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.dhokla.breaks.data.ThemeMode
 import com.dhokla.breaks.schedule.Scheduler
 import com.dhokla.breaks.ui.HomeScreen
 import com.dhokla.breaks.ui.OnboardingScreen
 import com.dhokla.breaks.ui.SettingsScreen
+import com.dhokla.breaks.ui.components.CalmBackground
+import androidx.compose.foundation.isSystemInDarkTheme
+import com.dhokla.breaks.ui.theme.resolveDark
 import com.dhokla.breaks.ui.theme.BreaksTheme
 import kotlinx.coroutines.launch
 
@@ -45,9 +51,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            BreaksTheme {
-                AppRoot()
-            }
+            AppRoot()
         }
     }
 }
@@ -62,6 +66,22 @@ fun AppRoot() {
     val prefs by store.prefs.collectAsState(initial = null)
     var showSettings by rememberSaveable { mutableStateOf(false) }
 
+    val systemDark = isSystemInDarkTheme()
+    val darkTheme = (prefs?.themeMode ?: ThemeMode.SYSTEM).resolveDark(systemDark)
+
+    DisposableEffect(darkTheme) {
+        val style = if (darkTheme) {
+            SystemBarStyle.dark(Color.TRANSPARENT)
+        } else {
+            SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+        }
+        (context as? ComponentActivity)?.enableEdgeToEdge(
+            statusBarStyle = style,
+            navigationBarStyle = style
+        )
+        onDispose { }
+    }
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -74,24 +94,30 @@ fun AppRoot() {
 
     BackHandler(enabled = showSettings) { showSettings = false }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-    ) {
-        val current = prefs
-        when {
-            current == null -> Unit
-            !current.onboarded -> OnboardingScreen(
-                onComplete = {
-                    scope.launch {
-                        Scheduler.startFirstBreak(context, store)
-                        store.setOnboarded()
+    BreaksTheme(darkTheme = darkTheme) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            CalmBackground()
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+            ) {
+                val current = prefs
+            when {
+                current == null -> Unit
+                !current.onboarded -> OnboardingScreen(
+                    onComplete = {
+                        scope.launch {
+                            Scheduler.startFirstBreak(context, store)
+                            store.setOnboarded()
+                        }
                     }
-                }
-            )
-            else -> AnimatedContent(
+                )
+                else -> AnimatedContent(
                 targetState = showSettings,
                 transitionSpec = {
                     if (targetState) {
@@ -127,10 +153,16 @@ fun AppRoot() {
                 } else {
                     HomeScreen(
                         prefs = current,
-                        onOpenSettings = { showSettings = true }
+                        themeMode = current.themeMode,
+                        onOpenSettings = { showSettings = true },
+                        onCycleTheme = {
+                            scope.launch { store.setThemeMode(current.themeMode.next()) }
+                        }
                     )
+                }
                 }
             }
         }
+    }
     }
 }

@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -29,14 +27,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.dhokla.breaks.audio.Chime
+import com.dhokla.breaks.ui.components.Blob
 import com.dhokla.breaks.ui.components.CalmBackground
 
 @Composable
@@ -61,53 +58,31 @@ fun BreakScreen(
         ),
         label = "scale"
     )
-    val ringColor = MaterialTheme.colorScheme.primary
 
     Box(modifier = Modifier.fillMaxSize()) {
         CalmBackground()
-        Box(
+        Blob(
             modifier = Modifier
                 .align(Alignment.Center)
-                .size(300.dp)
-                .drawBehind {
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                ringColor.copy(alpha = 0.10f),
-                                ringColor.copy(alpha = 0f)
-                            )
-                        ),
-                        radius = size.minDimension / 2f * breatheScale
-                    )
+                .fillMaxWidth(0.88f)
+                .graphicsLayer {
+                    alpha = entrance.value
+                    scaleX = breatheScale
+                    scaleY = breatheScale
+                    translationY = (1f - entrance.value) * 40f
                 }
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .systemBarsPadding()
-                .padding(horizontal = 36.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer {
-                        alpha = entrance.value
-                        translationY = (1f - entrance.value) * 40f
-                    },
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "Time for a little break.",
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                     textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(14.dp))
                 Text(
                     text = "Step away for a moment.\nYour brain will thank you.",
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
@@ -120,7 +95,6 @@ fun BreakScreen(
             },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .systemBarsPadding()
                 .padding(bottom = 48.dp)
                 .fillMaxWidth(0.62f)
                 .height(54.dp)

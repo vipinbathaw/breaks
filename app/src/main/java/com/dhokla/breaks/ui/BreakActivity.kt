@@ -1,8 +1,10 @@
 package com.dhokla.breaks.ui
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
@@ -10,7 +12,9 @@ import com.dhokla.breaks.BreaksApp
 import com.dhokla.breaks.notify.Notifications
 import com.dhokla.breaks.schedule.Scheduler
 import com.dhokla.breaks.ui.theme.BreaksTheme
+import com.dhokla.breaks.ui.theme.resolveDark
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class BreakActivity : ComponentActivity() {
 
@@ -27,7 +31,19 @@ class BreakActivity : ComponentActivity() {
         }
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        enableEdgeToEdge()
+        val playSound = intent?.getBooleanExtra(EXTRA_PLAY_SOUND, false) ?: false
+        val prefs = runBlocking { store.snapshot() }
+        val systemDark = (
+            resources.configuration.uiMode and
+                android.content.res.Configuration.UI_MODE_NIGHT_MASK
+            ) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val darkTheme = prefs.themeMode.resolveDark(systemDark)
+        val barStyle = if (darkTheme) {
+            SystemBarStyle.dark(Color.TRANSPARENT)
+        } else {
+            SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+        }
+        enableEdgeToEdge(statusBarStyle = barStyle, navigationBarStyle = barStyle)
 
         onBackPressedDispatcher.addCallback(
             this,
@@ -38,9 +54,8 @@ class BreakActivity : ComponentActivity() {
             }
         )
 
-        val playSound = intent?.getBooleanExtra(EXTRA_PLAY_SOUND, false) ?: false
         setContent {
-            BreaksTheme {
+            BreaksTheme(darkTheme = darkTheme) {
                 BreakScreen(
                     playSound = playSound,
                     onAcknowledge = ::acknowledgeAndFinish

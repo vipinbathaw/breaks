@@ -1,7 +1,9 @@
 package com.dhokla.breaks.ui
 
 import android.content.Intent
+import android.content.Context
 import android.net.Uri
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -10,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -22,26 +25,36 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.dhokla.breaks.data.BreaksPrefs
 import com.dhokla.breaks.data.BreaksStore
 import com.dhokla.breaks.data.ReminderStyle
 import com.dhokla.breaks.notify.Notifications
 import com.dhokla.breaks.schedule.Scheduler
+import com.dhokla.breaks.ui.components.rememberResumeTick
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -53,6 +66,12 @@ fun SettingsScreen(
     onSoundChange: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
+    val resumeTick = rememberResumeTick()
+    val exactAlarmsAllowed = remember(resumeTick) { Scheduler.canScheduleExact(context) }
+    val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+    val batteryOptimizationIgnored = remember(resumeTick) {
+        powerManager?.isIgnoringBatteryOptimizations(context.packageName) ?: true
+    }
 
     Column(
         modifier = Modifier
@@ -80,6 +99,8 @@ fun SettingsScreen(
 
         SectionLabel("Break interval")
         Spacer(Modifier.height(14.dp))
+        var editingCustom by remember { mutableStateOf(false) }
+        var customText by remember { mutableStateOf("") }
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -87,10 +108,64 @@ fun SettingsScreen(
             BreaksStore.INTERVAL_PRESETS.forEach { minutes ->
                 IntervalPill(
                     label = "$minutes min",
-                    selected = minutes == prefs.intervalMinutes,
-                    onClick = { onIntervalChange(minutes) }
+                    selected = !editingCustom && minutes == prefs.intervalMinutes,
+                    onClick = {
+                        editingCustom = false
+                        onIntervalChange(minutes)
+                    }
                 )
             }
+            IntervalPill(
+                label = "Custom",
+                selected = editingCustom || prefs.intervalMinutes !in BreaksStore.INTERVAL_PRESETS,
+                onClick = {
+                    if (customText.isEmpty()) customText = prefs.intervalMinutes.toString()
+                    editingCustom = true
+                }
+            )
+        }
+        if (editingCustom) {
+            val parsed = customText.toIntOrNull()
+            AlertDialog(
+                onDismissRequest = { editingCustom = false },
+                title = { Text("Custom interval") },
+                text = {
+                    Column {
+                        Text(
+                            text = "Minutes between breaks, from 1 to 720.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = customText,
+                            onValueChange = { text ->
+                                if (text.length <= 3 && text.all { it.isDigit() }) customText = text
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            label = { Text("Minutes") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            parsed?.let(onIntervalChange)
+                            editingCustom = false
+                        },
+                        enabled = parsed != null && parsed in 1..720
+                    ) {
+                        Text("Set")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { editingCustom = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
 
         Divider()
@@ -151,7 +226,7 @@ fun SettingsScreen(
             )
         }
 
-        if (!Scheduler.canScheduleExact(context)) {
+        if (!exactAlarmsAllowed) {
             Divider()
             HintLine(
                 text = "Precise alarms are off, so reminders may arrive a few minutes late.",
@@ -159,6 +234,20 @@ fun SettingsScreen(
                 onAction = {
                     context.startActivity(
                         Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                            .setData(Uri.parse("package:${context.packageName}"))
+                    )
+                }
+            )
+        }
+
+        if (!batteryOptimizationIgnored) {
+            Divider()
+            HintLine(
+                text = "Battery optimization can delay reminders on this phone.",
+                actionLabel = "Allow",
+                onAction = {
+                    context.startActivity(
+                        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
                             .setData(Uri.parse("package:${context.packageName}"))
                     )
                 }

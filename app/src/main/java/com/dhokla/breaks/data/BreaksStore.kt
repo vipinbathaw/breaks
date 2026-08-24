@@ -17,12 +17,21 @@ enum class ReminderStyle {
     NOTIFICATION
 }
 
+enum class ThemeMode {
+    SYSTEM,
+    LIGHT,
+    DARK;
+
+    fun next(): ThemeMode = entries[(ordinal + 1) % entries.size]
+}
+
 data class BreaksPrefs(
     val onboarded: Boolean,
     val intervalMinutes: Int,
     val style: ReminderStyle,
     val soundEnabled: Boolean,
-    val nextBreakAt: Long
+    val nextBreakAt: Long,
+    val themeMode: ThemeMode
 )
 
 private val Context.dataStore by preferencesDataStore(name = "breaks")
@@ -35,6 +44,7 @@ class BreaksStore(private val context: Context) {
         val STYLE = stringPreferencesKey("reminder_style")
         val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
         val NEXT_BREAK_AT = longPreferencesKey("next_break_at")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
     }
 
     val prefs: Flow<BreaksPrefs> = context.dataStore.data.map { p ->
@@ -45,7 +55,10 @@ class BreaksStore(private val context: Context) {
                 ReminderStyle.entries.firstOrNull { it.name == s }
             } ?: ReminderStyle.FULL_SCREEN,
             soundEnabled = p[Keys.SOUND_ENABLED] ?: true,
-            nextBreakAt = p[Keys.NEXT_BREAK_AT] ?: 0L
+            nextBreakAt = p[Keys.NEXT_BREAK_AT] ?: 0L,
+            themeMode = p[Keys.THEME_MODE]?.let { s ->
+                ThemeMode.entries.firstOrNull { it.name == s }
+            } ?: ThemeMode.SYSTEM
         )
     }
 
@@ -58,6 +71,8 @@ class BreaksStore(private val context: Context) {
     suspend fun setStyle(style: ReminderStyle) = edit { it[Keys.STYLE] = style.name }
 
     suspend fun setSoundEnabled(enabled: Boolean) = edit { it[Keys.SOUND_ENABLED] = enabled }
+
+    suspend fun setThemeMode(mode: ThemeMode) = edit { it[Keys.THEME_MODE] = mode.name }
 
     suspend fun setNextBreakAt(atMs: Long) = edit { it[Keys.NEXT_BREAK_AT] = atMs }
 

@@ -11,6 +11,7 @@ import com.dhokla.breaks.notify.ReminderReceiver
 object Scheduler {
 
     private const val REMINDER_REQUEST_CODE = 421
+    private const val SHOW_INTENT_REQUEST_CODE = 422
     private const val MISSED_GRACE_MS = 60_000L
 
     fun nextBreakAt(fromMs: Long, intervalMinutes: Int): Long =
@@ -30,7 +31,8 @@ object Scheduler {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !am.canScheduleExactAlarms()) {
             am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi)
         } else {
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi)
+            val showIntent = mainActivityPendingIntent(appContext)
+            am.setAlarmClock(AlarmManager.AlarmClockInfo(atMs, showIntent), pi)
         }
     }
 
@@ -83,6 +85,16 @@ object Scheduler {
         return PendingIntent.getBroadcast(
             context,
             REMINDER_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun mainActivityPendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, com.dhokla.breaks.MainActivity::class.java)
+        return PendingIntent.getActivity(
+            context,
+            SHOW_INTENT_REQUEST_CODE,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
