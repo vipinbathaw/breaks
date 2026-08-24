@@ -49,6 +49,7 @@ import com.dhokla.breaks.data.ThemeMode
 import com.dhokla.breaks.notify.Notifications
 import com.dhokla.breaks.schedule.Scheduler
 import com.dhokla.breaks.ui.components.Blob
+import com.dhokla.breaks.ui.components.formatTimeOfDay
 import com.dhokla.breaks.ui.components.rememberResumeTick
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -90,6 +91,13 @@ fun HomeScreen(
     } else {
         "until your next break"
     }
+    val withinActiveWindow = remember(
+        nowMs / 60_000L,
+        prefs.activeStartMinutes,
+        prefs.activeEndMinutes
+    ) {
+        Scheduler.isWithinActiveWindow(prefs, nowMs)
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -100,7 +108,40 @@ fun HomeScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Blob(modifier = Modifier.fillMaxWidth(0.84f)) {
-                if (prefs.remindersEnabled) {
+                if (!prefs.remindersEnabled) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Reminders are paused",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Breaks will stay quiet\nuntil you turn them back on.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else if (!withinActiveWindow) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Breaks are resting",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Back at ${formatTimeOfDay(prefs.activeStartMinutes)}\n" +
+                                "during your active hours.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         AnimatedContent(
                             targetState = countdownText,
@@ -134,22 +175,6 @@ fun HomeScreen(
                             text = label,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Reminders are paused",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = "Breaks will stay quiet\nuntil you turn them back on.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
                         )
                     }
                 }

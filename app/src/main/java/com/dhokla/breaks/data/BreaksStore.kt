@@ -32,7 +32,9 @@ data class BreaksPrefs(
     val soundEnabled: Boolean,
     val nextBreakAt: Long,
     val themeMode: ThemeMode,
-    val remindersEnabled: Boolean
+    val remindersEnabled: Boolean,
+    val activeStartMinutes: Int,
+    val activeEndMinutes: Int
 )
 
 private val Context.dataStore by preferencesDataStore(name = "breaks")
@@ -47,6 +49,8 @@ class BreaksStore(private val context: Context) {
         val NEXT_BREAK_AT = longPreferencesKey("next_break_at")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val REMINDERS_ENABLED = booleanPreferencesKey("reminders_enabled")
+        val ACTIVE_START_MIN = intPreferencesKey("active_start_minutes")
+        val ACTIVE_END_MIN = intPreferencesKey("active_end_minutes")
     }
 
     val prefs: Flow<BreaksPrefs> = context.dataStore.data.map { p ->
@@ -61,7 +65,9 @@ class BreaksStore(private val context: Context) {
             themeMode = p[Keys.THEME_MODE]?.let { s ->
                 ThemeMode.entries.firstOrNull { it.name == s }
             } ?: ThemeMode.SYSTEM,
-            remindersEnabled = p[Keys.REMINDERS_ENABLED] ?: true
+            remindersEnabled = p[Keys.REMINDERS_ENABLED] ?: true,
+            activeStartMinutes = p[Keys.ACTIVE_START_MIN] ?: DEFAULT_ACTIVE_START_MINUTES,
+            activeEndMinutes = p[Keys.ACTIVE_END_MIN] ?: DEFAULT_ACTIVE_END_MINUTES
         )
     }
 
@@ -80,6 +86,11 @@ class BreaksStore(private val context: Context) {
     suspend fun setRemindersEnabled(enabled: Boolean) =
         edit { it[Keys.REMINDERS_ENABLED] = enabled }
 
+    suspend fun setActiveHours(startMinutes: Int, endMinutes: Int) = edit {
+        it[Keys.ACTIVE_START_MIN] = startMinutes
+        it[Keys.ACTIVE_END_MIN] = endMinutes
+    }
+
     suspend fun setNextBreakAt(atMs: Long) = edit { it[Keys.NEXT_BREAK_AT] = atMs }
 
     private suspend fun edit(transform: (MutablePreferences) -> Unit) {
@@ -88,6 +99,8 @@ class BreaksStore(private val context: Context) {
 
     companion object {
         const val DEFAULT_INTERVAL_MINUTES = 20
+        const val DEFAULT_ACTIVE_START_MINUTES = 9 * 60
+        const val DEFAULT_ACTIVE_END_MINUTES = 21 * 60
         val INTERVAL_PRESETS = listOf(15, 20, 30, 45, 60)
     }
 }

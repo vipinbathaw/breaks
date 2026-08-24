@@ -30,6 +30,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +38,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,20 +57,24 @@ import com.dhokla.breaks.data.BreaksStore
 import com.dhokla.breaks.data.ReminderStyle
 import com.dhokla.breaks.notify.Notifications
 import com.dhokla.breaks.schedule.Scheduler
+import com.dhokla.breaks.ui.components.formatTimeOfDay
 import com.dhokla.breaks.ui.components.rememberResumeTick
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     prefs: BreaksPrefs,
     onBack: () -> Unit,
     onRemindersToggle: (Boolean) -> Unit,
+    onActiveHoursChange: (Int, Int) -> Unit,
     onIntervalChange: (Int) -> Unit,
     onStyleChange: (ReminderStyle) -> Unit,
     onSoundChange: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     val resumeTick = rememberResumeTick()
+    var editingStart by remember { mutableStateOf(false) }
+    var editingEnd by remember { mutableStateOf(false) }
     val exactAlarmsAllowed = remember(resumeTick) { Scheduler.canScheduleExact(context) }
     val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
     val batteryOptimizationIgnored = remember(resumeTick) {
@@ -127,6 +134,26 @@ fun SettingsScreen(
         }
 
         Divider()
+        SectionLabel("Active hours")
+        Spacer(Modifier.height(6.dp))
+        SettingValueRow(
+            title = "Starts",
+            value = formatTimeOfDay(prefs.activeStartMinutes),
+            onClick = { editingStart = true }
+        )
+        SettingValueRow(
+            title = "Ends",
+            value = formatTimeOfDay(prefs.activeEndMinutes),
+            onClick = { editingEnd = true }
+        )
+        Text(
+            text = "Reminders only fire between these times.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+
+        Divider()
         SectionLabel("Break interval")
         Spacer(Modifier.height(14.dp))
         var editingCustom by remember { mutableStateOf(false) }
@@ -151,6 +178,28 @@ fun SettingsScreen(
                 onClick = {
                     if (customText.isEmpty()) customText = prefs.intervalMinutes.toString()
                     editingCustom = true
+                }
+            )
+        }
+        if (editingStart) {
+            TimePickerDialog(
+                title = "Active from",
+                initialMinutes = prefs.activeStartMinutes,
+                onDismiss = { editingStart = false },
+                onConfirm = { minutes ->
+                    onActiveHoursChange(minutes, prefs.activeEndMinutes)
+                    editingStart = false
+                }
+            )
+        }
+        if (editingEnd) {
+            TimePickerDialog(
+                title = "Active until",
+                initialMinutes = prefs.activeEndMinutes,
+                onDismiss = { editingEnd = false },
+                onConfirm = { minutes ->
+                    onActiveHoursChange(prefs.activeStartMinutes, minutes)
+                    editingEnd = false
                 }
             )
         }
@@ -283,6 +332,63 @@ fun SettingsScreen(
                 }
             )
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimePickerDialog(
+    title: String,
+    initialMinutes: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit
+) {
+    val state = rememberTimePickerState(
+        initialHour = initialMinutes / 60,
+        initialMinute = initialMinutes % 60,
+        is24Hour = false
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { TimePicker(state = state) },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(state.hour * 60 + state.minute) }) {
+                Text("Set")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun SettingValueRow(
+    title: String,
+    value: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }
 

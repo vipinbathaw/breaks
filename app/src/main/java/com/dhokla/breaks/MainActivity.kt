@@ -156,6 +156,12 @@ fun AppRoot() {
                                 store.setRemindersEnabled(enabled)
                             }
                         },
+                        onActiveHoursChange = { startMinutes, endMinutes ->
+                            scope.launch {
+                                store.setActiveHours(startMinutes, endMinutes)
+                                Scheduler.rescheduleForActiveHours(context, store)
+                            }
+                        },
                         onIntervalChange = { minutes ->
                             scope.launch { Scheduler.changeInterval(context, store, minutes) }
                         },

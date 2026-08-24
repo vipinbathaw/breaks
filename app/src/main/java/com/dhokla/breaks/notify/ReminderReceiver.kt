@@ -18,8 +18,19 @@ class ReminderReceiver : BroadcastReceiver() {
             try {
                 val prefs = appContext.breaksStore.snapshot()
                 if (prefs.remindersEnabled) {
-                    Notifications.postBreakReminder(appContext, prefs.style, prefs.soundEnabled)
-                    Scheduler.startFirstBreak(appContext, appContext.breaksStore)
+                    val now = System.currentTimeMillis()
+                    if (Scheduler.isWithinActiveWindow(prefs, now)) {
+                        Notifications.postBreakReminder(
+                            appContext,
+                            prefs.style,
+                            prefs.soundEnabled
+                        )
+                        Scheduler.startFirstBreak(appContext, appContext.breaksStore)
+                    } else {
+                        val at = Scheduler.nextWindowStartMs(prefs, now)
+                        appContext.breaksStore.setNextBreakAt(at)
+                        Scheduler.schedule(appContext, at)
+                    }
                 }
             } finally {
                 pendingResult.finish()
