@@ -22,8 +22,11 @@ android {
     buildTypes {
         release {
             optimization {
-                enable = false
+                enable = true
             }
+            isShrinkResources = true
+            // Local testing only. Use a dedicated release keystore for Play uploads.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
