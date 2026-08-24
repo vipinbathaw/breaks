@@ -1,0 +1,90 @@
+package com.dhokla.breaks.schedule
+
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import com.dhokla.breaks.data.BreaksStore
+import com.dhokla.breaks.notify.ReminderReceiver
+
+object Scheduler {
+
+    private const val REMINDER_REQUEST_CODE = 421
+    private const val MISSED_GRACE_MS = 60_000L
+
+    fun nextBreakAt(fromMs: Long, intervalMinutes: Int): Long =
+        fromMs + intervalMinutes * 60_000L
+
+    fun canScheduleExact(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+        val am = context.getSystemService(AlarmManager::class.java) ?: return false
+        return am.canScheduleExactAlarms()
+    }
+
+    fun schedule(context: Context, atMs: Long) {
+        val appContext = context.applicationContext
+        val am = appContext.getSystemService(AlarmManager::class.java) ?: return
+        val pi = reminderPendingIntent(appContext)
+        am.cancel(pi)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !am.canScheduleExactAlarms()) {
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi)
+        } else {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi)
+        }
+    }
+
+    fun cancel(context: Context) {
+        val am = context.applicationContext.getSystemService(AlarmManager::class.java) ?: return
+        am.cancel(reminderPendingIntent(context.applicationContext))
+    }
+
+    suspend fun startFirstBreak(context: Context, store: BreaksStore) {
+        val prefs = store.snapshot()
+        val at = nextBreakAt(System.currentTimeMillis(), prefs.intervalMinutes)
+        store.setNextBreakAt(at)
+        schedule(context, at)
+    }
+
+    suspend fun acknowledgeBreak(context: Context, store: BreaksStore) {
+        startFirstBreak(context, store)
+    }
+
+    suspend fun changeInterval(context: Context, store: BreaksStore, minutes: Int) {
+        val current = store.snapshot()
+        if (minutes == current.intervalMinutes && current.nextBreakAt > 0L) {
+            schedule(context, current.nextBreakAt)
+            return
+        }
+        store.setInterval(minutes)
+        val at = nextBreakAt(System.currentTimeMillis(), minutes)
+        store.setNextBreakAt(at)
+        schedule(context, at)
+    }
+
+    suspend fun healIfStalled(context: Context, store: BreaksStore) {
+        val prefs = store.snapshot()
+        if (!prefs.onboarded) return
+        val now = System.currentTimeMillis()
+        val at = when {
+            prefs.nextBreakAt <= 0L -> nextBreakAt(now, prefs.intervalMinutes)
+            now >= prefs.nextBreakAt + MISSED_GRACE_MS -> nextBreakAt(now, prefs.intervalMinutes)
+            else -> {
+                if (prefs.nextBreakAt > now) schedule(context, prefs.nextBreakAt)
+                return
+            }
+        }
+        store.setNextBreakAt(at)
+        schedule(context, at)
+    }
+
+    private fun reminderPendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, ReminderReceiver::class.java)
+        return PendingIntent.getBroadcast(
+            context,
+            REMINDER_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+}
