@@ -31,7 +31,8 @@ data class BreaksPrefs(
     val style: ReminderStyle,
     val soundEnabled: Boolean,
     val nextBreakAt: Long,
-    val themeMode: ThemeMode
+    val themeMode: ThemeMode,
+    val remindersEnabled: Boolean
 )
 
 private val Context.dataStore by preferencesDataStore(name = "breaks")
@@ -45,6 +46,7 @@ class BreaksStore(private val context: Context) {
         val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
         val NEXT_BREAK_AT = longPreferencesKey("next_break_at")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val REMINDERS_ENABLED = booleanPreferencesKey("reminders_enabled")
     }
 
     val prefs: Flow<BreaksPrefs> = context.dataStore.data.map { p ->
@@ -58,7 +60,8 @@ class BreaksStore(private val context: Context) {
             nextBreakAt = p[Keys.NEXT_BREAK_AT] ?: 0L,
             themeMode = p[Keys.THEME_MODE]?.let { s ->
                 ThemeMode.entries.firstOrNull { it.name == s }
-            } ?: ThemeMode.SYSTEM
+            } ?: ThemeMode.SYSTEM,
+            remindersEnabled = p[Keys.REMINDERS_ENABLED] ?: true
         )
     }
 
@@ -73,6 +76,9 @@ class BreaksStore(private val context: Context) {
     suspend fun setSoundEnabled(enabled: Boolean) = edit { it[Keys.SOUND_ENABLED] = enabled }
 
     suspend fun setThemeMode(mode: ThemeMode) = edit { it[Keys.THEME_MODE] = mode.name }
+
+    suspend fun setRemindersEnabled(enabled: Boolean) =
+        edit { it[Keys.REMINDERS_ENABLED] = enabled }
 
     suspend fun setNextBreakAt(atMs: Long) = edit { it[Keys.NEXT_BREAK_AT] = atMs }
 

@@ -36,6 +36,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.dhokla.breaks.data.ThemeMode
+import com.dhokla.breaks.notify.Notifications
 import com.dhokla.breaks.schedule.Scheduler
 import com.dhokla.breaks.ui.HomeScreen
 import com.dhokla.breaks.ui.OnboardingScreen
@@ -144,6 +145,17 @@ fun AppRoot() {
                     SettingsScreen(
                         prefs = current,
                         onBack = { showSettings = false },
+                        onRemindersToggle = { enabled ->
+                            scope.launch {
+                                if (enabled) {
+                                    Scheduler.startFirstBreak(context, store)
+                                } else {
+                                    Scheduler.cancel(context)
+                                    Notifications.cancelReminder(context)
+                                }
+                                store.setRemindersEnabled(enabled)
+                            }
+                        },
                         onIntervalChange = { minutes ->
                             scope.launch { Scheduler.changeInterval(context, store, minutes) }
                         },
@@ -157,6 +169,17 @@ fun AppRoot() {
                         onOpenSettings = { showSettings = true },
                         onCycleTheme = {
                             scope.launch { store.setThemeMode(current.themeMode.next()) }
+                        },
+                        onToggleReminders = {
+                            scope.launch {
+                                if (current.remindersEnabled) {
+                                    Scheduler.cancel(context)
+                                    Notifications.cancelReminder(context)
+                                } else {
+                                    Scheduler.startFirstBreak(context, store)
+                                }
+                                store.setRemindersEnabled(!current.remindersEnabled)
+                            }
                         }
                     )
                 }

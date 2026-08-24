@@ -17,8 +17,10 @@ class ReminderReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.Default).launch {
             try {
                 val prefs = appContext.breaksStore.snapshot()
-                Notifications.postBreakReminder(appContext, prefs.style, prefs.soundEnabled)
-                Scheduler.startFirstBreak(appContext, appContext.breaksStore)
+                if (prefs.remindersEnabled) {
+                    Notifications.postBreakReminder(appContext, prefs.style, prefs.soundEnabled)
+                    Scheduler.startFirstBreak(appContext, appContext.breaksStore)
+                }
             } finally {
                 pendingResult.finish()
             }

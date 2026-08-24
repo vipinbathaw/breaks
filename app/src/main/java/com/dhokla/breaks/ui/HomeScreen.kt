@@ -58,7 +58,8 @@ fun HomeScreen(
     prefs: BreaksPrefs,
     themeMode: ThemeMode,
     onOpenSettings: () -> Unit,
-    onCycleTheme: () -> Unit
+    onCycleTheme: () -> Unit,
+    onToggleReminders: () -> Unit
 ) {
     val context = LocalContext.current
     val resumeTick = rememberResumeTick()
@@ -99,51 +100,70 @@ fun HomeScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Blob(modifier = Modifier.fillMaxWidth(0.84f)) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    AnimatedContent(
-                        targetState = countdownText,
-                        transitionSpec = {
-                            (
-                                slideInVertically(tween(260)) { it / 5 } + fadeIn(tween(260))
-                                ) togetherWith fadeOut(tween(160))
-                        },
-                        label = "countdown"
-                    ) { text ->
-                        val base = MaterialTheme.typography.displayMedium
-                        Text(
-                            text = text,
-                            style = base.copy(
-                                fontSize = (base.fontSize.value * countdownScale).sp,
-                                lineHeight = (base.lineHeight.value * countdownScale).sp
-                            ),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            textAlign = TextAlign.Center,
-                            softWrap = false,
-                            maxLines = 1,
-                            onTextLayout = { layout ->
-                                if (layout.hasVisualOverflow) {
-                                    countdownScale = (countdownScale - 0.06f).coerceAtLeast(0.5f)
+                if (prefs.remindersEnabled) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        AnimatedContent(
+                            targetState = countdownText,
+                            transitionSpec = {
+                                (
+                                    slideInVertically(tween(260)) { it / 5 } + fadeIn(tween(260))
+                                    ) togetherWith fadeOut(tween(160))
+                            },
+                            label = "countdown"
+                        ) { text ->
+                            val base = MaterialTheme.typography.displayMedium
+                            Text(
+                                text = text,
+                                style = base.copy(
+                                    fontSize = (base.fontSize.value * countdownScale).sp,
+                                    lineHeight = (base.lineHeight.value * countdownScale).sp
+                                ),
+                                color = MaterialTheme.colorScheme.onBackground,
+                                textAlign = TextAlign.Center,
+                                softWrap = false,
+                                maxLines = 1,
+                                onTextLayout = { layout ->
+                                    if (layout.hasVisualOverflow) {
+                                        countdownScale = (countdownScale - 0.06f).coerceAtLeast(0.5f)
+                                    }
                                 }
-                            }
+                            )
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Reminders are paused",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Breaks will stay quiet\nuntil you turn them back on.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
         }
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(horizontal = 28.dp)
-                .padding(end = 56.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+        if (prefs.remindersEnabled) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(horizontal = 28.dp)
+                    .padding(end = 56.dp, bottom = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
             if (!notificationsAllowed) {
                 NoticeLine(
                     text = "Notifications are off, so reminders can\u2019t reach you.",
@@ -178,12 +198,13 @@ fun HomeScreen(
                     }
                 )
             }
+            }
         }
 
         IconButton(
             onClick = onCycleTheme,
             modifier = Modifier
-                .align(Alignment.TopEnd)
+                .align(Alignment.BottomStart)
                 .padding(16.dp)
         ) {
             Icon(
@@ -200,18 +221,34 @@ fun HomeScreen(
             )
         }
 
-        IconButton(
-            onClick = onOpenSettings,
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp)
+                .padding(end = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Outlined.Settings,
-                contentDescription = "Settings",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(22.dp)
-            )
+            IconButton(onClick = onToggleReminders) {
+                Icon(
+                    painter = painterResource(
+                        if (prefs.remindersEnabled) R.drawable.ic_pause else R.drawable.ic_play
+                    ),
+                    contentDescription = if (prefs.remindersEnabled) {
+                        "Pause reminders"
+                    } else {
+                        "Resume reminders"
+                    },
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            IconButton(onClick = onOpenSettings) {
+                Icon(
+                    imageVector = Icons.Outlined.Settings,
+                    contentDescription = "Settings",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
         }
     }
 }

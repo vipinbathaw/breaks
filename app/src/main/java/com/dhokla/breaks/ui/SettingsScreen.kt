@@ -61,6 +61,7 @@ import com.dhokla.breaks.ui.components.rememberResumeTick
 fun SettingsScreen(
     prefs: BreaksPrefs,
     onBack: () -> Unit,
+    onRemindersToggle: (Boolean) -> Unit,
     onIntervalChange: (Int) -> Unit,
     onStyleChange: (ReminderStyle) -> Unit,
     onSoundChange: (Boolean) -> Unit
@@ -97,6 +98,35 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(24.dp))
 
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "Reminders",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = if (prefs.remindersEnabled) {
+                        "Break reminders are on"
+                    } else {
+                        "Break reminders are paused"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = prefs.remindersEnabled,
+                onCheckedChange = { onRemindersToggle(it) }
+            )
+        }
+
+        Divider()
         SectionLabel("Break interval")
         Spacer(Modifier.height(14.dp))
         var editingCustom by remember { mutableStateOf(false) }

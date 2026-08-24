@@ -66,7 +66,7 @@ object Scheduler {
 
     suspend fun healIfStalled(context: Context, store: BreaksStore) {
         val prefs = store.snapshot()
-        if (!prefs.onboarded) return
+        if (!prefs.onboarded || !prefs.remindersEnabled) return
         val now = System.currentTimeMillis()
         val at = when {
             prefs.nextBreakAt <= 0L -> nextBreakAt(now, prefs.intervalMinutes)
