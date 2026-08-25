@@ -7,6 +7,29 @@ interval — nothing more. No accounts, no tracking, no network access.
 
 ---
 
+<p align="center">
+  <img src="art/screenshots/1-home-light.png" width="250" alt="Breaks home screen, light theme" />
+  &nbsp;
+  <img src="art/screenshots/3-break-reminder.png" width="250" alt="Full-screen break reminder" />
+  &nbsp;
+  <img src="art/screenshots/6-notification.png" width="250" alt="Heads-up break notification" />
+</p>
+
+<details>
+<summary>More screenshots</summary>
+
+<p align="center">
+  <img src="art/screenshots/2-home-dark.png" width="200" alt="Breaks home screen, dark theme" />
+  &nbsp;
+  <img src="art/screenshots/4-settings.png" width="200" alt="Settings" />
+  &nbsp;
+  <img src="art/screenshots/5-resting.png" width="200" alt="Paused state" />
+  &nbsp;
+  <img src="art/screenshots/7-onboarding.png" width="200" alt="Onboarding" />
+</p>
+
+</details>
+
 ## Features
 
 - **Countdown at a glance** — time until your next break, rendered inside a
