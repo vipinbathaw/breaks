@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import com.dhokla.breaks.BreaksApp
+import com.dhokla.breaks.content.BreakMessages
 import com.dhokla.breaks.notify.Notifications
 import com.dhokla.breaks.schedule.Scheduler
 import com.dhokla.breaks.ui.theme.BreaksTheme
@@ -32,6 +33,7 @@ class BreakActivity : ComponentActivity() {
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         val playSound = intent?.getBooleanExtra(EXTRA_PLAY_SOUND, false) ?: false
+        val message = intent?.getStringExtra(EXTRA_MESSAGE) ?: BreakMessages.next()
         val prefs = runBlocking { store.snapshot() }
         val systemDark = (
             resources.configuration.uiMode and
@@ -58,6 +60,7 @@ class BreakActivity : ComponentActivity() {
             BreaksTheme(darkTheme = darkTheme) {
                 BreakScreen(
                     playSound = playSound,
+                    message = message,
                     onAcknowledge = ::acknowledgeAndFinish
                 )
             }
@@ -74,5 +77,6 @@ class BreakActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_PLAY_SOUND = "play_sound"
+        const val EXTRA_MESSAGE = "message"
     }
 }

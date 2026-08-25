@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.dhokla.breaks.breaksStore
+import com.dhokla.breaks.content.BreakMessages
 import com.dhokla.breaks.schedule.Scheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +24,8 @@ class ReminderReceiver : BroadcastReceiver() {
                         Notifications.postBreakReminder(
                             appContext,
                             prefs.style,
-                            prefs.soundEnabled
+                            prefs.soundEnabled,
+                            BreakMessages.next()
                         )
                         Scheduler.startFirstBreak(appContext, appContext.breaksStore)
                     } else {

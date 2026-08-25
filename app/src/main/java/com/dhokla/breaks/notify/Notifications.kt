@@ -65,21 +65,28 @@ object Notifications {
     fun notificationsEnabled(context: Context): Boolean =
         NotificationManagerCompat.from(context.applicationContext).areNotificationsEnabled()
 
-    fun postBreakReminder(context: Context, style: ReminderStyle, soundEnabled: Boolean) {
+    fun postBreakReminder(
+        context: Context,
+        style: ReminderStyle,
+        soundEnabled: Boolean,
+        message: String
+    ) {
         val appContext = context.applicationContext
         if (!notificationsEnabled(appContext)) return
 
         val wantsFullScreen = style == ReminderStyle.FULL_SCREEN
         val fullScreenAllowed = wantsFullScreen && canUseFullScreenIntent(appContext)
 
-        val contentIntent = breakActivityPendingIntent(appContext, PI_REQUEST_CONTENT, false)
+        val contentIntent = breakActivityPendingIntent(
+            appContext, PI_REQUEST_CONTENT, false, message
+        )
         val builder = NotificationCompat.Builder(
             appContext,
             if (fullScreenAllowed) CHANNEL_POPUP else CHANNEL_NOTIFICATION
         )
             .setSmallIcon(R.drawable.ic_stat_break)
             .setContentTitle(appContext.getString(R.string.notif_title))
-            .setContentText(appContext.getString(R.string.notif_body))
+            .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setAutoCancel(true)
@@ -87,7 +94,9 @@ object Notifications {
 
         if (fullScreenAllowed) {
             builder.setFullScreenIntent(
-                breakActivityPendingIntent(appContext, PI_REQUEST_FULL_SCREEN, soundEnabled),
+                breakActivityPendingIntent(
+                    appContext, PI_REQUEST_FULL_SCREEN, soundEnabled, message
+                ),
                 true
             )
         } else {
@@ -110,11 +119,13 @@ object Notifications {
     private fun breakActivityPendingIntent(
         context: Context,
         requestCode: Int,
-        playSound: Boolean
+        playSound: Boolean,
+        message: String
     ): PendingIntent {
         val intent = Intent(context, BreakActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             .putExtra(BreakActivity.EXTRA_PLAY_SOUND, playSound)
+            .putExtra(BreakActivity.EXTRA_MESSAGE, message)
         return PendingIntent.getActivity(
             context,
             requestCode,

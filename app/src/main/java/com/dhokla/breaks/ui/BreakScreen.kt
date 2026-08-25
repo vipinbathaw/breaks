@@ -39,6 +39,7 @@ import com.dhokla.breaks.ui.components.CalmBackground
 @Composable
 fun BreakScreen(
     playSound: Boolean,
+    message: String,
     onAcknowledge: () -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
@@ -81,7 +82,7 @@ fun BreakScreen(
                 )
                 Spacer(Modifier.height(14.dp))
                 Text(
-                    text = "Step away for a moment.\nYour brain will thank you.",
+                    text = message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
