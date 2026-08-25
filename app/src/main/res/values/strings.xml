@@ -3,5 +3,5 @@
     <string name="channel_popup_name">Break pop-ups</string>
     <string name="channel_notification_name">Break notifications</string>
     <string name="notif_title">Time for a break 🌿</string>
-    <string name="notif_body">Tap to take your little break.</string>
+    <string name="notif_body">Time to take your little break.</string>
 </resources>

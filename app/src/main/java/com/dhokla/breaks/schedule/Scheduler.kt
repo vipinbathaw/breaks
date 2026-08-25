@@ -104,12 +104,7 @@ object Scheduler {
         if (!prefs.onboarded || !prefs.remindersEnabled) return
         val now = System.currentTimeMillis()
         val at = if (isWithinActiveWindow(prefs, now)) {
-            val nb = prefs.nextBreakAt
-            if (nb > now && isWithinActiveWindow(prefs, nb)) {
-                nb
-            } else {
-                nextBreakAt(now, prefs.intervalMinutes)
-            }
+            nextBreakAt(now, prefs.intervalMinutes)
         } else {
             nextWindowStartMs(prefs, now)
         }
